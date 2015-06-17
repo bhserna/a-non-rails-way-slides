@@ -1,4 +1,4 @@
-# Fast tests for apps that use Rails (using Test-First programming)
+# Fast tests for apps that use Rails
 
 Slides for the ruby meetup.
 
