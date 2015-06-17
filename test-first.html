@@ -1,0 +1,562 @@
+<html>
+  <head>
+    <title>Title</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+
+      th, td {
+        padding: 1em;
+        border: 1px solid #eeeeee;
+      }
+
+      .text-muted {
+        color: #999;
+      }
+
+      ul {
+        font-size: 1.3em;
+        line-height: 1.4;
+      }
+
+      li {
+        padding-bottom: 0.5em;
+      }
+
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Fast tests for apps that use Rails
+(using Test-First programming)
+
+```terminal
+Finished in 16 minutes # => =(
+```
+
+```terminal
+Finished in 1.5 seconds # => =)
+```
+
+---
+
+class: middle
+
+# Test-First, comes from XP...
+# XP values are **Comunication**, **Simplicity**, **Feeback**, **Courage** and **Respect**.
+
+```ruby
+my_values.include?(xp_values) ? :continue : :exit
+```
+
+---
+
+class: middle
+
+# Test-First, is **writing a failing automated test before changing any code**.
+
+## And addresses many problems at once...
+
+---
+
+class: middle
+
+# Scope creep
+
+## No more **just in case** code, if you need to put that other code in, write another test after you've made this one work.
+
+---
+
+class: middle
+
+# Coupling and cohesion
+
+## If it's hard to write a test, it's a signal that you have a design problem. **Loosely coupled, highly cohesive code is easy to test**.
+
+---
+
+class: middle
+
+# Trust
+
+## It's hard to trust the author of code that doesn't work. **Writing clean code that works and demonstrating your intentions** with automated tests, give your teammates a reason to trust you.
+
+---
+
+class: middle
+
+# Rhythm
+
+## It's easy to get lost for hours when you are coding. When programming test-first, it's clear what to do next: **either write another test or make the broken test work**. Soon this develops into a netural and efficient rhythm...
+
+### test, code, refactor, test, code, refactor...
+
+---
+
+class: center, middle
+
+# Magic Tricks of Testing by Sandi Metz
+
+---
+
+class: center, middle
+
+![img](object.png)
+
+---
+
+class: center, middle
+
+![img](tricks.png)
+
+---
+
+class: middle
+
+# Incomming Messages
+
+```ruby
+describe "Book store" do
+  it "has books" do
+    store = BookeStore.new(books: ["Principito"])
+
+    # Query -> Assert result
+    expect(store.books).to eq ["Principito"]
+  end
+
+  it "can receive books" do
+    store = BookeStore.new(books: ["Principito"])
+
+    # Command -> Assert direct public side effects
+    store.add_book("Rayuela")
+    expect(store.books).to eq ["Principito", "Rayuela"]
+  end
+end
+```
+---
+
+class: middle
+
+# Sent to self
+
+```ruby
+describe "Cylinder" do
+  it "computes its volume" do
+    cylinder = Cylinder.new(radio: 5, height: 10)
+
+    # Nopppp! this makes your code fragile
+    expect(cylinder).to receive(:area)
+    expect(cylinder.volume).to eq 785.4
+  end
+end
+```
+
+---
+
+class: middle
+
+# Outgoing query messages
+
+```ruby
+describe "Basketball game" do
+  it "has a title" do
+    bulls = Team.new("Bulls")
+    jazz  = Team.new("Jazz")
+
+    # => Nooooo, this is not needed!
+    expect(bulls).to receive(:name)
+    expect(jazz).to receive(:name)
+
+    game = Game.new(team_a: bulls, team_b: jazz)
+    expect(game.title).to eq "Bulls vs Jazz"
+  end
+end
+```
+---
+
+class: middle
+
+# Outgoing command messages
+
+```ruby
+
+describe "Book store" do
+  it "stores new added books" do
+    db = DB.new
+    store = BookeStore.new(books: ["Principito"], storage: db)
+
+    # Command -> Expect to send
+    expect(db).to receive(:save).with(["Principito", "Rayuela"])
+    store.add_book("Rayuela")
+  end
+end
+```
+
+---
+
+class: middle, center
+
+# Rails
+
+---
+
+class: middle, center
+
+# We are not building Rails Apps **we are building apps that use Rails**.
+
+[rails] -> [App]  vs [rails App]
+
+---
+
+class: middle
+
+# We want to test our code not the rails code <small class="text-muted">(that's integration tests job)</small>
+
+### As an example in my last project we have, **1174 unit** tests and **150 integration** tests.
+
+---
+
+class: middle, center
+
+# Why?
+
+---
+
+class: middle
+
+# Because we want to make sure that our system works every minute or maybe less...
+
+```terminal
+Finished in 16 minutes # => =(
+```
+
+```terminal
+Finished in 1.5 seconds # => =)
+```
+
+---
+
+class: middle
+
+# Becuase we want to be able to make changes without breaking the system and do incremental design
+
+---
+
+class: middle, center
+
+# Why?
+
+---
+
+class: middle, center
+
+# Because there is no perfect design!
+
+---
+
+class: middle, center
+
+# Mmmm... but how I start using this in my App?
+
+---
+
+class: middle, center
+
+# Write POROs (Plain old ruby objects)
+<span class="text-muted">Thats all?</span>
+
+---
+
+class: middle
+
+# Define the boundaries of your system
+
+### maybe... Database (ActiveRecord), Payment Gateways, File system...
+
+---
+
+class: middle
+
+# Start using just Incoming Query messages in Modules
+
+* Define **functions** without side effects... just receive something and return something
+* Don't keep state
+* Don't define the boundaries, just build the needed data.
+
+---
+
+class: middle
+
+```ruby
+module GreenGrading
+  describe "green gradings list" do
+    # ....
+
+    describe "each item" do
+      describe "is manageable by user" do
+        it "when the user is the author" do
+          grading = grading_for(
+            record_with: { author_id: user.id },
+            current_user: user
+          )
+
+          expect(grading).to be_editable_by_user
+          expect(grading).to be_destroyable_by_user
+        end
+      end
+    end
+  end
+end
+
+# controller
+
+def index
+  records = @sample.green_gradings.includes(:author)
+  @list = GreenGradings.green_gradings_list(
+    current_company, current_user, records, view_context)
+end
+```
+
+---
+
+```ruby
+module Sorting
+  describe 'current sample sort' do
+    describe 'to query' do
+      it 'when no column selected' do
+        params = {}
+        sorting = current_samples_sort(params)
+        expect(sorting.to_query[:id]).to eq :desc
+      end
+
+      it 'when attribute selected' do
+        params = { direction: "asc", sort_by: "name" }
+        sorting = current_samples_sort(params)
+        expect(sorting.to_query[:name]).to eq :asc
+      end
+
+      it 'when region name selected' do
+        params = { direction: "desc", sort_by: "region_name" }
+        sorting = current_samples_sort(params)
+        expect(sorting.to_query).to eq "sample_regions.name desc"
+      end
+
+      def current_samples_sort(params)
+        Sorting.current_samples_sort(params)
+      end
+    end
+  end
+end
+```
+
+---
+
+class: middle
+
+```ruby
+# controller
+
+def index
+  sample_records = current_company
+    .samples
+    .includes(#something)
+    .order(current_sort.to_query)
+
+  @samples = sample_list(sample_records)
+end
+
+private
+
+def current_sort
+  @current_sort ||= Sorting.current_samples_sort(params)
+end
+```
+
+---
+
+class: middle
+
+# With this approach you are not testing te interaction just the values that your app produce.
+
+## Try to use this technique as much as you can...
+
+---
+
+class: middle
+
+# But if the complexity is in the interaction or you think that you are not testing enough
+
+### Compute -> External Service -> Complex Function -> File system -> Database
+
+---
+
+class: middle
+
+# Now you can introduce Outgoing Command Messages
+
+### Use this to test **what you are sending to the boundaries** of the system or to **other objects that computes complex things**
+
+---
+
+```ruby
+module Billing
+  describe 'Create subscription' do
+    attr_reader :gateway, :mail_sender, :checkout_params
+
+    it 'creates a customer with subscription in the gateway' do
+      company_record = new_company_without_subscription
+
+      expect(gateway).
+        to receive(:create_customer).
+        with(card: 'card-token', plan: 'basic', email: 'payinguser@example.com').
+        and_call_original
+
+      create_subscription(company_record, checkout_params)
+    end
+    # ...
+
+    describe 'sends an email to the new customer' do
+      it 'when selects the individual plan' do
+        company_record = new_company_without_subscription
+
+        expect(mail_sender).
+          to receive(:welcome_single_license_customer).
+          with(email: "payinguser@example.com",
+               trial_ends_after: "30 days",
+               billing_details: "monthly fee of $15.00")
+
+        create_subscription(company_record,
+          checkout_params.merge("plan_id" => "individual"))
+      end
+      #...
+    end
+  end
+end
+```
+
+---
+
+class: middle
+
+```ruby
+  # controller
+
+  def create
+    subscription = Billing.create_subscription(
+      current_company, params, DelayedMailer.new, view_context, Coupon)
+
+    current_company.update_attributes(subscription.for_company_record)
+    redirect_to authenticated_root_path
+
+  rescue Billing::CardError => error
+    redirect_to new_subscription_path, alert: error.message
+  end
+
+  class DelayedMailer
+    def method_missing(method, *args)
+      SubscriptionMailer.delay.send(method, *args)
+    end
+  end
+ ```
+
+---
+
+```ruby
+module GreenGrading
+  describe 'create green grading' do
+    attr_reader :errors, :store, :success, :author_id, :sample_id
+
+    before do
+      @sample_id = double "Sample id"
+      @author_id = double "Author id"
+      @store = double "GreenGrading store"
+      @success = double "Success callback"
+    end
+
+    it 'creates a reecord with the given params' do
+      expect(success).to receive(:call)
+      expect(store).to receive(:create).with(
+        author_id: author_id,
+        sample_id: sample_id,
+        color: "blue_green",
+        weight: 20,
+        defects: [
+          { id: "full_black", count: 1 },
+          { id: "fungus_damage", count: 3 }
+        ]
+      )
+
+      create_green_grading(
+        color: "blue_green",
+        weight: 20,
+        defects: [
+          { id: "full_black", count: 1 },
+          { id: "fungus_damage", count: 3 }
+        ]
+      )
+    end
+  end
+end
+```
+
+---
+
+class: middle
+
+```ruby
+  # controller
+  def create
+    GreenGradings.create_green_grading(default_responses.merge(
+      store: GreenGrading,
+      author_id: current_user.id,
+      params: {
+        sample_id: sample_id,
+        green_grading: green_grading_params
+      }
+    ))
+  end
+
+  def default_responses
+    {
+      success: -> {
+        render json: {}, status: :ok
+      },
+
+      error: ->(errors) {
+        render json: { errors: errors }, status: :unprocessable_entity
+      }
+    }
+  end
+```
+
+---
+
+class: middle
+
+## I think is enough, now you have to practice!
+
+* [Rules, by Sandi Metz](https://www.youtube.com/watch?v=npOGOmkxuio)
+* [Sandi Metz - Magic Tricks of Testing](https://www.youtube.com/watch?v=qPfQM4w4I04)
+* [Boundaries by Gary Bernhardt](https://www.youtube.com/watch?v=yTkzNHF6rMs)
+* [Architecture the Lost Years by Robert Martin](https://www.youtube.com/watch?v=WpkDN78P884)
+
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
