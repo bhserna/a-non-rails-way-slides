@@ -130,14 +130,14 @@ class: middle
 ```ruby
 describe "Book store" do
   it "has books" do
-    store = BookeStore.new(books: ["Principito"])
+    store = BookStore.new(books: ["Principito"])
 
     # Query -> Assert result
     expect(store.books).to eq ["Principito"]
   end
 
   it "can receive books" do
-    store = BookeStore.new(books: ["Principito"])
+    store = BookStore.new(books: ["Principito"])
 
     # Command -> Assert direct public side effects
     store.add_book("Rayuela")
@@ -195,7 +195,7 @@ class: middle
 describe "Book store" do
   it "stores new added books" do
     db = DB.new
-    store = BookeStore.new(books: ["Principito"], storage: db)
+    store = BookStore.new(books: ["Principito"], storage: db)
 
     # Command -> Expect to send
     expect(db).to receive(:save).with(["Principito", "Rayuela"])
