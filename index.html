@@ -39,473 +39,456 @@
 
 class: center, middle
 
-# Fast tests for apps that use Rails
-(using Test-First programming)
+# Una forma de construir apliaciones con Rails
 
-```terminal
-Finished in 16 minutes # => =(
-```
-
-```terminal
-Finished in 1.5 seconds # => =)
-```
+O tal vez... Como yo construyo aplicaciones de Rails
 
 ---
 
-class: middle
+# Que te ayuda a...
 
-# Test-First, comes from XP...
-# XP values are **Comunication**, **Simplicity**, **Feeback**, **Courage** and **Respect**.
+* Tener pruebas rápidas (algo así como **1000 pruebas en 2seg**)
+* Saber que **tu sistema funciona todo el tiempo** (por lo menos lo que has probado)
+* Poder hacer cambios más rápido... Por que tu código esta **desacoplado** y **tiene pruebas**
+* Tener más **claras las reglas de negocio**
+* **Borrar código sin remordimientos!!**
+
+---
+
+# Ejemplo de pruebas rápidas...
+
+<video width="100%" controls><source src="fast_tests_video.mov" /></video>
+
+---
+
+# Ejemplo de reglas claras en el código...
 
 ```ruby
-my_values.include?(xp_values) ? :continue : :exit
-```
+module Projects
+  class ProjectStatus
+    # stuff
 
----
+    def self.past?(project, current_date)
+      project.target_date && project.target_date < current_date
+    end
 
-class: middle
+    def self.completly_founded?(project)
+      project.briq_funding && invested_amount(project) >= project.briq_funding
+    end
 
-# Test-First, is **writing a failing automated test before changing any code**.
+    def self.active?(project, current_date)
+      project.published? &&
+      !refunded?(project) &&
+      !executed?(project, current_date) &&
+      !completly_founded?(project) &&
+        project.target_date && project.target_date >= current_date
+    end
 
-## And addresses many problems at once...
+    def self.minimum_funding(project)
+      project.briq_funding * (project.minimum_funding / 100.0)
+    end
 
----
-
-class: middle
-
-# Scope creep
-
-## No more **just in case** code, if you need to put that other code in, write another test after you've made this one work.
-
----
-
-class: middle
-
-# Coupling and cohesion
-
-## If it's hard to write a test, it's a signal that you have a design problem. **Loosely coupled, highly cohesive code is easy to test**.
-
----
-
-class: middle
-
-# Trust
-
-## It's hard to trust the author of code that doesn't work. **Writing clean code that works and demonstrating your intentions** with automated tests, give your teammates a reason to trust you.
-
----
-
-class: middle
-
-# Rhythm
-
-## It's easy to get lost for hours when you are coding. When programming test-first, it's clear what to do next: **either write another test or make the broken test work**. Soon this develops into a netural and efficient rhythm...
-
-### test, code, refactor, test, code, refactor...
-
----
-
-class: center, middle
-
-# Magic Tricks of Testing by Sandi Metz
-
----
-
-class: center, middle
-
-![img](object.png)
-
----
-
-class: center, middle
-
-![img](tricks.png)
-
----
-
-class: middle
-
-# Incomming Messages
-
-```ruby
-describe "Book store" do
-  it "has books" do
-    store = BookStore.new(books: ["Principito"])
-
-    # Query -> Assert result
-    expect(store.books).to eq ["Principito"]
-  end
-
-  it "can receive books" do
-    store = BookStore.new(books: ["Principito"])
-
-    # Command -> Assert direct public side effects
-    store.add_book("Rayuela")
-    expect(store.books).to eq ["Principito", "Rayuela"]
-  end
-end
-```
----
-
-class: middle
-
-# Sent to self
-
-```ruby
-describe "Cylinder" do
-  it "computes its volume" do
-    cylinder = Cylinder.new(radio: 5, height: 10)
-
-    # Nopppp! this makes your code fragile
-    expect(cylinder).to receive(:area)
-    expect(cylinder.volume).to eq 785.4
+    # stuff...
   end
 end
 ```
 
 ---
 
-class: middle
-
-# Outgoing query messages
+# Ejemplo de reglas claras en las pruebas...
 
 ```ruby
-describe "Basketball game" do
-  it "has a title" do
-    bulls = Team.new("Bulls")
-    jazz  = Team.new("Jazz")
+module UserPortfolio
+  RSpec.describe "User portfolio - Next payments" do
+    # stuff...
+    describe "for project investment" do
+      describe "interest payments" do
+        describe "(at expiry)" do
+          example "(terminated on time frame)" do
+            project = project_with(
+              fixed_annual_rate: annual_rate = 11,
+              execution_date: Date.new(2015, 10, 8),
+              payment_type: "at_expiry",
+              time_frame: 5,
+              investments: [investment_with(amount: 100_000, user: user)])
 
-    # => Nooooo, this is not needed!
-    expect(bulls).to receive(:name)
-    expect(jazz).to receive(:name)
+            payments = payments_for(project)
 
-    game = Game.new(team_a: bulls, team_b: jazz)
-    expect(game.title).to eq "Bulls vs Jazz"
-  end
-end
-```
----
-
-class: middle
-
-# Outgoing command messages
-
-```ruby
-
-describe "Book store" do
-  it "stores new added books" do
-    db = DB.new
-    store = BookStore.new(books: ["Principito"], storage: db)
-
-    # Command -> Expect to send
-    expect(db).to receive(:save).with(["Principito", "Rayuela"])
-    store.add_book("Rayuela")
-  end
-end
-```
-
----
-
-class: middle, center
-
-# Rails
-
----
-
-class: middle, center
-
-# We are not building Rails Apps **we are building apps that use Rails**.
-
-[rails] -> [App]  vs [rails App]
-
----
-
-class: middle
-
-# We want to test our code not the rails code <small class="text-muted">(that's integration tests job)</small>
-
-### As an example in my last project we have, **1174 unit** tests and **150 integration** tests.
-
----
-
-class: middle, center
-
-# Why?
-
----
-
-class: middle
-
-# Because we want to make sure that our system works every minute or maybe less...
-
-```terminal
-Finished in 16 minutes # => =(
-```
-
-```terminal
-Finished in 1.5 seconds # => =)
-```
-
----
-
-class: middle
-
-# Becuase we want to be able to make changes without breaking the system and do incremental design
-
----
-
-class: middle, center
-
-# Why?
-
----
-
-class: middle, center
-
-# Because there is no perfect design!
-
----
-
-class: middle, center
-
-# Mmmm... but how I start using this in my App?
-
----
-
-class: middle, center
-
-# Write POROs (Plain old ruby objects)
-<span class="text-muted">Thats all?</span>
-
----
-
-class: middle
-
-# Define the boundaries of your system
-
-### maybe... Database (ActiveRecord), Payment Gateways, File system...
-
----
-
-class: middle
-
-# Start using just Incoming Query messages in Modules
-
-* Define **functions** without side effects... just receive something and return something
-* Don't keep state
-* Don't define the boundaries, just build the needed data.
-
----
-
-class: middle
-
-```ruby
-module GreenGrading
-  describe "green gradings list" do
-    # ....
-
-    describe "each item" do
-      describe "is manageable by user" do
-        it "when the user is the author" do
-          grading = grading_for(
-            record_with: { author_id: user.id },
-            current_user: user
-          )
-
-          expect(grading).to be_editable_by_user
-          expect(grading).to be_destroyable_by_user
+            expect(payments.count).to eq 1
+            expect(payments.map{ |p| [p.date, round(p.amount)] }).to eq [
+            [Date.new(2016, 3, 8),
+             amount_for(100_000, months: 5, rate: annual_rate)]]
+          end
         end
       end
     end
   end
-end
+ end
+```
 
-# controller
+---
 
-def index
-  records = @sample.green_gradings.includes(:author)
-  @list = GreenGradings.green_gradings_list(
-    current_company, current_user, records, view_context)
+class: center, middle
+
+# Las Reglas...
+
+---
+
+# Construye la lógica de tu aplicación detras de métodos o funciones de Modulo.
+
+```ruby
+require_relative 'projects/executor'
+require_relative 'projects/admin_list_project'
+#....
+
+module Projects
+  def self.execute_project(project_id, raw_date, config)
+    Executor.execute_project(project_id, raw_date, config)
+  end
+
+  def self.revert_execution(project, config)
+    Executor.revert_execution(project, config)
+  end
+
+  def self.admin_projects_list(projects_store:,
+    instrument_translator:, date_formatter:)
+    projects_store.find_all_loding_developer.map do |project|
+      AdminListProject.new(
+        project,
+        publisher: Publisher,
+        instrument_translator: instrument_translator,
+        date_formatter: date_formatter)
+    end
+  end
+  #...
 end
 ```
 
 ---
 
+### No siempre tienes que llevar las cosas a otra clase o módulo...
+
 ```ruby
-module Sorting
-  describe 'current sample sort' do
-    describe 'to query' do
-      it 'when no column selected' do
-        params = {}
-        sorting = current_samples_sort(params)
-        expect(sorting.to_query[:id]).to eq :desc
-      end
+module PaymentProjection
+  def self.projection_for_user(user, projects, current_date)
+    projects.map do |project|
+      investment_principal = project.
+        investments.
+        select { |inv| inv.user_id == user.id }.
+        map(&:amount).
+        sum
 
-      it 'when attribute selected' do
-        params = { direction: "asc", sort_by: "name" }
-        sorting = current_samples_sort(params)
-        expect(sorting.to_query[:name]).to eq :asc
-      end
-
-      it 'when region name selected' do
-        params = { direction: "desc", sort_by: "region_name" }
-        sorting = current_samples_sort(params)
-        expect(sorting.to_query).to eq "sample_regions.name desc"
-      end
-
-      def current_samples_sort(params)
-        Sorting.current_samples_sort(params)
-      end
+      projection_for_project_investment(
+        project, investment_principal, current_date)
     end
+  end
+
+  #...
+
+  def self.payments_for_project_investment(project, investment_principal)
+    return [] unless project.execution_date
+
+    capital_payment = ProjectWithCapitalPayment.new(project).
+      capital_payment(investment_principal)
+
+    interest_payments = ProjectWithInterestPayments.new(project).
+        interest_payments(investment_principal)
+
+    ([capital_payment] + interest_payments).
+      reject { |payment| payment.amount == 0 }
   end
 end
 ```
-
 ---
 
-class: middle
+### Dentro de un controlador/mailer/job/model/etc... solo puedes llamar estas funciones de módulo.
+
+No doble namespace... Tal vez habrá casos especiales, pero yo no lo he ocupado.
 
 ```ruby
-# controller
-
-def index
-  sample_records = current_company
-    .samples
-    .includes(#something)
-    .order(current_sort.to_query)
-
-  @samples = sample_list(sample_records)
-end
-
-private
-
-def current_sort
-  @current_sort ||= Sorting.current_samples_sort(params)
-end
-```
-
----
-
-class: middle
-
-# With this approach you are not testing te interaction just the values that your app produce.
-
-## Try to use this technique as much as you can...
-
----
-
-class: middle
-
-# But if the complexity is in the interaction or you think that you are not testing enough
-
-### Compute -> External Service -> Complex Function -> File system -> Database
-
----
-
-class: middle
-
-# Now you can introduce Outgoing Command Messages
-
-### Use this to test **what you are sending to the boundaries** of the system or to **other objects that computes complex things**
-
----
-
-```ruby
-module Billing
-  describe 'Create subscription' do
-    attr_reader :gateway, :mail_sender, :checkout_params
-
-    it 'creates a customer with subscription in the gateway' do
-      company_record = new_company_without_subscription
-
-      expect(gateway).
-        to receive(:create_customer).
-        with(card: 'card-token', plan: 'basic', email: 'payinguser@example.com').
-        and_call_original
-
-      create_subscription(company_record, checkout_params)
-    end
-    # ...
-
-    describe 'sends an email to the new customer' do
-      it 'when selects the individual plan' do
-        company_record = new_company_without_subscription
-
-        expect(mail_sender).
-          to receive(:welcome_single_license_customer).
-          with(email: "payinguser@example.com",
-               trial_ends_after: "30 days",
-               billing_details: "monthly fee of $15.00")
-
-        create_subscription(company_record,
-          checkout_params.merge("plan_id" => "individual"))
-      end
-      #...
-    end
+class Admin::ProjectFundingTerminationsController < Admin::BaseController
+  def new
+    project = find_project
+    form = Projects.terminate_funding_form(project)
+    render locals: { project: project, form: form }, layout: false
   end
-end
-```
-
----
-
-class: middle
-
-```ruby
-  # controller
 
   def create
-    subscription = Billing.create_subscription(
-      current_company, params, DelayedMailer.new, view_context, Coupon)
+    termination = Projects.terminate_funding(
+      find_project.id,
+      params,
+      projects_store: Project,
+      investment_receipts_creator: DelayedInvestmentReceiptsCreator
+    )
 
-    current_company.update_attributes(subscription.for_company_record)
-    redirect_to authenticated_root_path
-
-  rescue Billing::CardError => error
-    redirect_to new_subscription_path, alert: error.message
-  end
-
-  class DelayedMailer
-    def method_missing(method, *args)
-      SubscriptionMailer.delay.send(method, *args)
+    if termination.success?
+      render partial: "admin/projects/projects_list",
+        locals: { projects: admin_projects_list }
+    else
+      render status: :unprocessable_entity
     end
   end
- ```
+end
+```
+
 
 ---
 
+### No tener dependecia directa de ninguna clase de Rails
+
+* Se vale incluir librerías como ActiveModel o ActiveSupport, pero es mejor ser prudente.
+* Todas las dependencias son "inyectadas" como parametros de la función.
+
 ```ruby
-module GreenGrading
-  describe 'create green grading' do
-    attr_reader :errors, :store, :success, :author_id, :sample_id
+class Admin::ProjectFundingTerminationsController < Admin::BaseController
+  def destroy
+    Projects.revert_funding_termination(
+      find_project,
+      projects_store: Project,
+      receipts_cancelator: ReceiptsCancelator
+    )
 
-    before do
-      @sample_id = double "Sample id"
-      @author_id = double "Author id"
-      @store = double "GreenGrading store"
-      @success = double "Success callback"
+    render partial: "admin/projects/projects_list",
+      locals: { projects: admin_projects_list }
+  end
+
+  private
+
+  def find_project
+    Project.find_by_slug params[:project_id]
+  end
+end
+```
+---
+
+# Todas las pruebas son a traves de las funciones de módulo
+
+* Es decir lo que usa Rails!
+* No hay pruebas para clases internas o métodos privados
+* Esto es lo que te permite refactorizar!!
+
+---
+
+### Ejemplo...
+
+```ruby
+it "(when project is refunded)" do
+  portfolio = portfolio_on(Date.new(2018, 2, 4))
+  date = next_payment_date_for_project(
+    portfolio,
+    refunded_project,
+    formatter: ->(date) { "My date: #{date}" },
+    not_executed_message: "No se ha ejecutado",
+    no_payments_left_message: "No hay más pagos",
+    project_refunded_message: "No aplica"
+  )
+
+  expect(date).to eq "No aplica"
+end
+
+def next_payment_date_for_project(portfolio, project, options = {})
+  portfolio.
+    projects_with_investment.
+    detect { |p| p.id == project.id }.
+    next_payment_date(options)
+end
+
+def portfolio_on(current_date)
+  portfolio_with([project_one, project_two,
+    not_executed_project, refunded_project], current_date)
+end
+
+def portfolio_with(projects, current_date)
+  projects_finder = FakeProjectFinder.new(*projects)
+  UserPortfolio.portfolio_for_user(user, current_date, projects_finder)
+end
+```
+---
+
+# No usar active record en las pruebas
+
+* Hace que tus pruebas corran mucho más rápido
+* Te ayuda a modelar mejor la interfaz entre tu sistema y active record
+
+```ruby
+before do
+  @user = user_with(first_name: "Maria")
+  @project_one = project_with(
+    fixed_annual_rate: 11,
+    execution_date: Date.new(2015, 10, 8),
+    investments: [investment_with(amount: 100_000, user: user)])
+end
+
+def project_with(attrs)
+  FakeProject.new({ fixed_annual_rate: 11 }.merge(attrs))
+end
+
+def investment_with(attrs)
+  FakeInvestment.new(attrs)
+end
+
+def user_with(attrs)
+  FakeUser.new(attrs)
+end
+```
+
+---
+
+# ...solo objetos
+
+```ruby
+class FakeInvestment
+  attr_reader :id, :date, :user, :amount, :user_id, :project, :project_id,
+    :investment_type
+
+  def initialize(attrs = {})
+    @id = attrs[:id] || SecureRandom.uuid
+    @date = attrs[:date]
+    @user = attrs[:user]
+    @user_id = attrs[:user_id] || user && user.id
+    @amount = attrs[:amount]
+    @project = attrs[:project]
+    @project_id = attrs[:project_id] || project && project.id
+    @investment_type = attrs[:investment_type]
+  end
+end
+```
+
+---
+
+class: center, middle
+
+# Preguntas que me han hecho...
+
+---
+
+# ¿Que tanto hay que delegar al modelo?
+
+* Asociaciones
+* Queries
+* Algunas validaciones (solo lo he ocupado con `validate_uniqueness`)
+
+```ruby
+class ProjectPayment < ActiveRecord::Base
+  belongs_to :project
+
+  def self.find_loading_project_and_investments(id)
+    includes(project: :investments).find(id)
+  end
+end
+```
+---
+
+# ¿Como defines los nombres de los métodos?
+
+La verdad no se!! ... pero trato de...
+
+* Que no suene muy CRUD
+* Tomar en cuenta la descripción de los stories
+* Que suene a acciones a nivel del usuario
+* Pienso más en [Namespace, función] que en [Actor, acción]
+
+---
+
+### ...algunos ejemplos
+
+```ruby
+module Projects
+  def self.admin_projects_list
+  end
+  def self.publish_project
+  end
+  def self.teaser
+  end
+  def self.teaser_form
+  end
+  def self.teaser_abstract
+  end
+  def self.rates_for_project
+  end
+  def self.status_for_project
+  end
+  def self.add_termination_date_form
+  end
+  def self.add_termination_date
+  end
+  def self.details_page_for_project
+  end
+  def self.terminate_funding_form
+  end
+  def self.terminate_funding
+  end
+  def self.terminated_funding_page
+  end
+  def self.revert_funding_termination
+  end
+end
+```
+
+---
+
+# ¿Cuales son los boundaries de mi aplicación?
+
+Esto varía según la aplicación, pero en los casos que me ha tocado trabajar...
+
+* Storage/almacenamiento
+* Mailers
+* Gateways de pago
+* Otros sistemas
+* Talvez otro módulo (que podría considerarse otro sistema?)
+
+---
+
+# ¿Como empiezas un proyecto?
+
+Con un módulo, una función y una prueba.
+
+```coffee
+window.Shop =
+  new: (products, order) ->
+    products: products
+
+describe "Shop", ->
+  it "has the configured options", ->
+    shop = Shop.new(shopProducts)
+    expect(shop.products).toEqual [
+      { id: "e1", name: "elote chico", price: 15.00 },
+      { id: "e2", name: "elote mediano", price: 20.00 },
+      { id: "e3", name: "elote grande", price: 25.00 }
+    ]
+```
+
+---
+
+### ¿Como empiezas a mover una aplicación existente?
+
+Con un módulo, una función y una prueba...Por cierto el módulo del ejemplo ya no existe.
+
+```ruby
+module NextPayments
+  def self.payments_for_project(project)
+  end
+end
+
+module NextPayments
+  class FakeProject
+    attr_reader :time_frame, :execution_date
+
+    def initialize(attrs)
+      @execution_date = attrs[:execution_date]
     end
+  end
 
-    it 'creates a reecord with the given params' do
-      expect(success).to receive(:call)
-      expect(store).to receive(:create).with(
-        author_id: author_id,
-        sample_id: sample_id,
-        color: "blue_green",
-        weight: 20,
-        defects: [
-          { id: "full_black", count: 1 },
-          { id: "fungus_damage", count: 3 }
-        ]
-      )
+  RSpec.describe "Next payments table" do
+    describe "capital payment" do
+      it "has no payments when project has no execution date" do
+        project = project_with(execution_date: nil)
+        payments = payments_for_project(project)
+        expect(payments).to eq []
+      end
 
-      create_green_grading(
-        color: "blue_green",
-        weight: 20,
-        defects: [
-          { id: "full_black", count: 1 },
-          { id: "fungus_damage", count: 3 }
-        ]
-      )
+    def project_with(attrs)
+      FakeProject.new(attrs)
     end
   end
 end
@@ -513,39 +496,37 @@ end
 
 ---
 
-class: middle
+### ¿Trabajando de esta manera es mucho más fácil separar tu aplicación de rails para usarla con algún otro framework para front-end estilo React o Angular?
 
-```ruby
-  # controller
-  def create
-    GreenGradings.create_green_grading(default_responses.merge(
-      store: GreenGrading,
-      author_id: current_user.id,
-      params: {
-        sample_id: sample_id,
-        green_grading: green_grading_params
-      }
-    ))
-  end
+Si y no...
 
-  def default_responses
-    {
-      success: -> {
-        render json: {}, status: :ok
-      },
+Creo que trabajar de esta forma **no hay mucha diferencia con respecto a lo que
+se hace normalmente con Rails**. Aunque creo que sigue siendo de ayuda.
 
-      error: ->(errors) {
-        render json: { errors: errors }, status: :unprocessable_entity
-      }
-    }
-  end
+También puede ser que estos conceptos te ayuden a separar la lógica del cliente
+de algún framework, aunque esto depende de la cantidad de lógica que lleves al
+cliente.
+
+```coffee
+window.Shop =
+  new: (products, order) ->
+    products: products
+
+describe "Shop", ->
+  it "has the configured options", ->
+    shop = Shop.new(shopProducts)
+    expect(shop.products).toEqual [
+      { id: "e1", name: "elote chico", price: 15.00 },
+      { id: "e2", name: "elote mediano", price: 20.00 },
+      { id: "e3", name: "elote grande", price: 25.00 }
+    ]
 ```
 
 ---
 
 class: middle
 
-## I think is enough, now you have to practice!
+## Otros recursos
 
 * [Rules, by Sandi Metz](https://www.youtube.com/watch?v=npOGOmkxuio)
 * [Sandi Metz - Magic Tricks of Testing](https://www.youtube.com/watch?v=qPfQM4w4I04)
